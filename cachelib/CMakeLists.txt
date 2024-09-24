@@ -22,6 +22,9 @@ cmake_minimum_required (VERSION 3.12)
 ## TODO: get version from variable
 project (CacheLib VERSION 0.1)
 
+set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 #configure_file(cachelib/cachelib_config.h.in cachelib_config.h)
 
 if (NOT DEFINED CACHELIB_MAJOR_VERSION)

@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include "cachelib/cachebench/cache/Cache.h"
+#include "cachelib/allocator/Util.h"
 namespace facebook {
 namespace cachelib {
 namespace cachebench {
@@ -81,6 +82,7 @@ Cache<Allocator>::Cache(const CacheConfig& config,
   allocatorConfig_.setCacheSize(config_.cacheSizeMB * (MB));
 
   if (!cacheDir.empty()) {
+     fslprint(cacheDir);
     allocatorConfig_.cacheDir = cacheDir;
   }
 

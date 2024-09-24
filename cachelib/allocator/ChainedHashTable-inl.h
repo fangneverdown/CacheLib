@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include "cachelib/allocator/ChainedHashTable.h"
 #pragma once
 #include <stdexcept>
 

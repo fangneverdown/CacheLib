@@ -15,7 +15,7 @@
  */
 
 #include "cachelib/allocator/memory/Slab.h"
-
+#include "cachelib/allocator/Reaper.h"
 namespace facebook {
 namespace cachelib {
 

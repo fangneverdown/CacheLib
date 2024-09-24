@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include "cachelib/allocator/CacheAllocator.h"
+#include "cachelib/allocator/Util.h"
 #pragma once
 
 namespace facebook {
@@ -178,6 +179,7 @@ void CacheAllocator<CacheTrait>::initCommon(bool dramCacheAttached) {
 template <typename CacheTrait>
 void CacheAllocator<CacheTrait>::initNvmCache(bool dramCacheAttached) {
   if (!config_.nvmConfig.has_value()) {
+    fslprint("!config_.nvmConfig.has_value()")
     return;
   }
 
@@ -196,7 +198,7 @@ void CacheAllocator<CacheTrait>::initNvmCache(bool dramCacheAttached) {
                                           config_.itemDestructor);
   if (!config_.cacheDir.empty()) {
     nvmCacheState_.clearPrevState();
-  }
+}
 }
 
 template <typename CacheTrait>
@@ -264,6 +266,7 @@ std::unique_ptr<MemoryAllocator> CacheAllocator<CacheTrait>::initAllocator(
   } else if (type == InitMemType::kMemNew) {
     return createNewMemoryAllocator();
   } else if (type == InitMemType::kMemAttach) {
+    fslprint("restoreMemoryAllocator");
     return restoreMemoryAllocator();
   }
 
@@ -3128,7 +3131,7 @@ folly::IOBufQueue CacheAllocator<CacheTrait>::saveStateToIOBuf() {
   CCacheManager::SerializationType ccState = compactCacheManager_->saveState();
 
   AccessSerializationType chainedItemAccessContainerState =
-      chainedItemAccessContainer_->saveState();
+      chainedItemAccessContainer_->saveState(); //fsltodo
 
   // serialize to an iobuf queue. The caller can then copy over the serialized
   // results into a single buffer.
@@ -3210,6 +3213,7 @@ CacheAllocator<CacheTrait>::shutDown() {
 template <typename CacheTrait>
 std::optional<bool> CacheAllocator<CacheTrait>::saveNvmCache() {
   if (!nvmCache_) {
+    fslprint("!nvmCache_");
     return std::nullopt;
   }
 
@@ -3217,15 +3221,18 @@ std::optional<bool> CacheAllocator<CacheTrait>::saveNvmCache() {
   // state of RAM as well.
   if (!nvmCache_->isEnabled()) {
     nvmCache_->shutDown();
+        fslprint(" nvmCache_->shutDown()");
     return std::nullopt;
   }
 
   if (!nvmCache_->shutDown()) {
     XLOG(ERR, "Could not shutdown nvmcache cleanly");
+        fslprint("!nvmCache_->shutDown()");
     return false;
   }
 
   nvmCacheState_.markSafeShutDown();
+      fslprint("saveNvmCache succeed");
   return true;
 }
 

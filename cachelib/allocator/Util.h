@@ -29,7 +29,13 @@
 #include <cachelib/allocator/KAllocation.h>
 #include <cachelib/allocator/memory/MemoryAllocator.h>
 #include <cachelib/allocator/memory/Slab.h>
-
+#ifndef fslprint
+#include <iostream>
+#define fslprint(var)                                                                         \
+    std::cout<< "ffffffffffffff        " << __DATE__ << "  " << __TIME__ << "  " << __FILE__ \
+              << ":" << __LINE__ << "  " << __FUNCTION__ << std::endl                       \
+              << var << std::endl;                                                            
+#endif
 namespace facebook {
 namespace cachelib {
 namespace util {

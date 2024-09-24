@@ -84,12 +84,12 @@ bool PeriodicWorker::start(const std::chrono::milliseconds sleepInterval,
   }
 
   auto runLoop = [this]() { loop(); };
-  workerThread_ = std::make_unique<std::thread>(std::move(runLoop));
-
+  // workerThread_ = std::make_unique<std::thread>(std::move(runLoop));
+  // workerThread_ = std::make_unique<std::thread>( );
   /*
    * Set the name of the thread
    */
-  folly::setThreadName(workerThread_->native_handle(), thread_name);
+  // folly::setThreadName(workerThread_->native_handle(), thread_name);
 
   return true;
 }

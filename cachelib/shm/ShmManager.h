@@ -20,6 +20,7 @@
 #include <folly/container/F14Map.h>
 
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -177,6 +178,7 @@ class ShmManager {
   // access. This is used to make sure two processes do not accidentally
   // use the same cache directory
   void lockMetadataFile(const std::string& file) {
+    std::cout<<file.c_str()<<std::endl;
     metaDataLockFile_ = folly::File(file.c_str(), O_RDONLY);
     if (!metaDataLockFile_.try_lock()) {
       util::throwSystemError(EBUSY, "Can not lock shm metadata file");

@@ -22,6 +22,7 @@
 
 #include <fstream>
 #include <vector>
+#include "cachelib/allocator/Util.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
@@ -51,6 +52,7 @@ ShmManager::ShmManager(const std::string& dir, bool usePosix)
 
   const auto metaFile = pathName(controlDir_, kMetaDataFile);
   mode_t controlMode = 0;
+  std::cout<<metaFile.c_str()<<std::endl;
   if (!util::getStatIfExists(controlDir_, &controlMode)) {
     // create directory
     util::makeDir(controlDir_);
@@ -59,9 +61,11 @@ ShmManager::ShmManager(const std::string& dir, bool usePosix)
     createEmptyMetadataFile(metaFile);
     // Lock file for exclusive access
     lockMetadataFile(metaFile);
+    fslprint("!getStatIfExists")
     return;
   } else if (!S_ISDIR(controlMode)) {
     // exists and is a file
+      fslprint("getStatIfExists  throwSystemError(ENOTDIR);")
     util::throwSystemError(ENOTDIR);
   }
 
@@ -150,7 +154,11 @@ typename ShmManager::ShutDownRes ShmManager::writeActiveSegmentsToFile() {
   const bool exists = util::getStatIfExists(fileName, nullptr);
   // if file was deleted in the process, then the user intended to drop all
   // the segments.
+  fslprint(fileName);
+    fslprint(nameToKey_.size());
+    //fslmod no metafile block
   if (!exists) {
+    fslprint("ShutDownRes::kFileDeleted;")
     // delete all the segments  that we know exist for this control directory
     // and exit
     removeAllSegments();
@@ -174,11 +182,12 @@ typename ShmManager::ShutDownRes ShmManager::writeActiveSegmentsToFile() {
       object.nameToKeyMap()[name] = key;
     }
   }
-
   // write to file
   std::string buf;
   apache::thrift::BinarySerializer::serialize(object, &buf);
   metadataStream_.seekp(0);
+  fslprint("buf.length())");
+  fslprint(buf.length());
   metadataStream_ << buf;
 
   metadataStream_.flush();
