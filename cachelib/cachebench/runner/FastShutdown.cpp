@@ -19,6 +19,7 @@
 #include <folly/logging/xlog.h>
 
 #include <cstddef>
+#include <cstring>
 #include <iostream>
 #include "cachelib/allocator/Util.h"
 
@@ -36,9 +37,9 @@ FastShutdownStressor::FastShutdownStressor(const CacheConfig& cacheConfig,
 void FastShutdownStressor::start() {
   startTime_ = std::chrono::system_clock::now();
   constexpr uint32_t kSlabSize = 4 * 1024 * 1024;
-
+ constexpr uint32_t kSliceSize = 32*1024;
   uint32_t nslabs = cache_->getCacheSize() / kSlabSize;
-  uint32_t numSmallAllocs = kSlabSize / (32*1024);
+  uint32_t numSmallAllocs = kSlabSize / kSliceSize;
   using CacheType = Cache<LruAllocator>;
   uint64_t expectedAbortCount = 0;
 
@@ -46,13 +47,19 @@ void FastShutdownStressor::start() {
   // time to interrupt slab release at different places.
   uint32_t waitTime = 6;
   std::vector<CacheType::WriteHandle> v;
-
-  for (uint32_t i = 0; i < nslabs; i++) {
-        for (uint32_t j = 0; j < numSmallAllocs; j++) {
+  char data_from[kSliceSize];
+  for (size_t i = 0; i < kSliceSize - 1; ++i) {
+      data_from[i] = 'A' + i%25;
+  }
+  memset(data_from, 1, kSliceSize);
+  std::cout << "allocating....\n";
+  for (size_t i = 0; i < nslabs; i++) {
+        for (size_t j = 0; j < numSmallAllocs; j++) {
           auto it = cache_->allocate(
               static_cast<uint8_t>(0),
-              folly::sformat("key_{}", i * numSmallAllocs + j), 32*1024);
+              folly::sformat("key_{}", i * numSmallAllocs + j), kSliceSize);
           if (it) {
+              memcpy(it->getMemory(), data_from, kSliceSize);
             cache_->insertOrReplace(it);
             // v.push_back(std::move(it));
           }
@@ -61,70 +68,8 @@ void FastShutdownStressor::start() {
       }
     
   // for (; waitTime <= numOps_ * 3; waitTime += 3) {
-  for(size_t tested_times =0;tested_times<20;tested_times++){
-    std::cout << "allocating....\n";
-
-    
-    // std::cout << "removing most of the allocated items....\n";
-    // // Free up items one per slab so that items from same slab are not together
-    // // in the free allocs list. Skip some while doing this.
-    // for (uint32_t j = 0; j < numSmallAllocs; j++) {
-    //   // skip some items
-    //   if (j % 10000 == 0) {
-    //     continue;
-    //   }
-    //   for (uint32_t i = 0; i < nslabs; i++) {
-    //     // Adding the check to make the linter happy
-    //     if (!v.empty()) {
-    //       v[i * numSmallAllocs + j].reset();
-    //       cache_->remove(folly::sformat("key_{}", i * numSmallAllocs + j));
-    //     }
-    //   }
-    // }
-    // create a thread that tries to allocate from a different slab class
-    // resulting in pool rebalancer to release one slab from class id 0 to
-    // class id 1.
-
-    // std::cout << "creating thread...\n";
-    // testThread_ = std::thread([this] {
-    //   int count = 0;
-    //   // This should trigger rebalancer to release a slab from class id 0.
-    //   while (count < 20) {
-    //     auto it1 = cache_->allocate(static_cast<uint8_t>(0), "nkey1", 50);
-    //     if (it1) {
-    //       cache_->insertOrReplace(it1);
-    //       break;
-    //     }
-    //     /* sleep override */
-    //     std::this_thread::sleep_for(std::chrono::milliseconds{50});
-    //     count++;
-    //   }
-    // });
-
-    // std::cout << "sleeping for " << waitTime << " seconds\n";
-    // // It could take up to 3 seconds for the rebalancer to kick in.
-    // /* sleep override */
-    // std::this_thread::sleep_for(std::chrono::seconds{waitTime});
-
-    // std::cout << "releasing the last few items...\n";
-    // release the items that were not removed, so that the items can be
-    // moved.
-    // for (uint32_t j = 0; j < numSmallAllocs; j += 10000) {
-    //   for (uint32_t i = 0; i < nslabs; i++) {
-    //     // Adding the check to make the linter happy
-    //     if (!v.empty()) {
-    //       v[i * numSmallAllocs + j].reset();
-    //     }
-    //   }
-    // }
-    std::cout << "insertOrReplace num: " <<nslabs*numSmallAllocs << "\n";
-    for (uint32_t i = 0; i < nslabs; i++) {
-      for (uint32_t j = 0; j < numSmallAllocs; j++) {
-        if (!v.empty()) {
-          v[i * numSmallAllocs + j].reset();
-        }
-      }
-    }
+  for(size_t tested_times =0;tested_times<3;tested_times++){
+    std::cout << "write num: " <<nslabs*numSmallAllocs << "\n";
     auto shutDownStartTime = std::chrono::system_clock::now();
     std::cout << "Shutting Down...\n";
     cache_->shutDown();
@@ -134,30 +79,29 @@ void FastShutdownStressor::start() {
         endTime_ - shutDownStartTime);
 
     std::cout << "Shut down durtaion " << shutdown_duration.count() << "\n";
-    // if (duration.count() > 10) {
-    //   throw std::runtime_error(
-    //       folly::sformat("Failed. Took {} seconds for shutdown to complete",
-    //                      duration.count()));
-    // }
-    // reattach the cache, so that stats can be collected or the test can be
-    // repeated.
     std::cout << "Reattaching to cache...\n";
     cache_->reAttach();
       auto reAttachTime = std::chrono::system_clock::now();
     auto restart_duration = std::chrono::duration_cast<std::chrono::microseconds>(
         reAttachTime - endTime_);
     std::cout << "restart durtaion " << restart_duration.count() << "\n";
-    expectedAbortCount++;
-    const auto stats = cache_->getStats();
-    // if (stats.numAbortedSlabReleases != expectedAbortCount) {
-    //   throw std::runtime_error(
-    //       folly::sformat("Failed. Expected abort count did not match {} {}",
-    //                      stats.numAbortedSlabReleases, expectedAbortCount));
-    // }
   }
 
   //fslcheck 
-  
+  sleep(10000000);
+  size_t check_count = 0;
+  for (size_t i = 0; i < nslabs; i++) {
+    for (size_t j = 0; j < numSmallAllocs; j++) {
+
+      auto it = cache_->find(folly::sformat("key_{}", i * numSmallAllocs + j) );
+      if(it){
+        assert(memcmp(it->getMemory(), data_from, kSliceSize) == 0);
+        check_count++;
+      }
+    }
+    // ops_.fetch_add(numSmallAllocs, std::memory_order_relaxed);
+  }
+  std::cout << "read num: " <<check_count << "\n";
 }
 
 } // namespace cachebench

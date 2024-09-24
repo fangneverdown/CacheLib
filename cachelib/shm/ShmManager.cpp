@@ -52,7 +52,6 @@ ShmManager::ShmManager(const std::string& dir, bool usePosix)
 
   const auto metaFile = pathName(controlDir_, kMetaDataFile);
   mode_t controlMode = 0;
-  std::cout<<metaFile.c_str()<<std::endl;
   if (!util::getStatIfExists(controlDir_, &controlMode)) {
     // create directory
     util::makeDir(controlDir_);
@@ -157,13 +156,13 @@ typename ShmManager::ShutDownRes ShmManager::writeActiveSegmentsToFile() {
   fslprint(fileName);
     fslprint(nameToKey_.size());
     //fslmod no metafile block
-  if (!exists) {
-    fslprint("ShutDownRes::kFileDeleted;")
-    // delete all the segments  that we know exist for this control directory
-    // and exit
-    removeAllSegments();
-    return ShutDownRes::kFileDeleted;
-  }
+  // if (!exists) {
+  //   fslprint("ShutDownRes::kFileDeleted;")
+  //   // delete all the segments  that we know exist for this control directory
+  //   // and exit
+  //   removeAllSegments();
+  //   return ShutDownRes::kFileDeleted;
+  // }
 
   // write the shmtype, nameToKey_ map to the file.
   DCHECK(metadataStream_);

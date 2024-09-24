@@ -132,7 +132,8 @@ void NvmCacheState::restoreState() {
       }
     }
   } catch (const std::exception& ex) {
-    XLOGF(ERR, "unable to deserialize nvm metadata file: {}", ex.what());
+    //fslmod
+    // XLOGF(ERR, "unable to deserialize nvm metadata file: {}", ex.what());
     shouldDropNvmCache_ = true;
   }
 }

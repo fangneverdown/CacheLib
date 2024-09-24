@@ -83,6 +83,7 @@ Cache<Allocator>::Cache(const CacheConfig& config,
 
   if (!cacheDir.empty()) {
      fslprint(cacheDir);
+     
     allocatorConfig_.cacheDir = cacheDir;
   }
 

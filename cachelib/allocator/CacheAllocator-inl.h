@@ -3727,7 +3727,8 @@ bool CacheAllocator<CacheTrait>::cleanupStrayShmSegments(
       // attached. if another process was attached, the following would fail.
       ShmManager::cleanup(cacheDir, posix);
     } catch (const std::exception& e) {
-      XLOGF(ERR, "Error cleaning up {}. Exception: ", cacheDir, e.what());
+      //fslmod
+      // XLOGF(ERR, "Error cleaning up {}. Exception: ", cacheDir, e.what());
       return false;
     }
   } else {
